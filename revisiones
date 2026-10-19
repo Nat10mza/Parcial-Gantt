@@ -1,2 +1,3 @@
 Duracion de e/s puede aumentar solo de 10 en 10.
 El quantum de tiempo en round robin tiene que ser suficiente para que el 80% de los procesos se hagan en una rafaga de cpu, agregar esa opcion
+en mas corto con desalojo cuando llega uno mas corto el proceso en ejecucion no pasa a listo de vuelta, solo desaparece
