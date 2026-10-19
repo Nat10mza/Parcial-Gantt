@@ -4,6 +4,7 @@ Ejecutar con:  .venv/bin/streamlit run app.py
 """
 import html
 import importlib.util
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -94,6 +95,17 @@ def parsear_procesos(df):
     return filas, errores
 
 
+def quantum_regla_80(filas):
+    # Menor quantum (múltiplo de INTERVALO) con el que al menos el 80% de las
+    # ráfagas de CPU terminan dentro de un solo quantum.
+    rafagas = sorted(r for f in filas for r in f["rafagas"])
+    total = len(rafagas)
+    necesarias = math.ceil(0.8 * total)
+    quantum = math.ceil(rafagas[necesarias - 1] / INTERVALO) * INTERVALO
+    cubiertas = sum(1 for r in rafagas if r <= quantum)
+    return quantum, cubiertas, total
+
+
 COLORES = ["#4C78A8", "#F58518", "#54A24B", "#E45756", "#72B7B2", "#B279A2", "#FF9DA6", "#9D755D"]
 
 
@@ -174,10 +186,23 @@ def main():
         st.header("Parámetros")
         algoritmo = st.radio("Algoritmo", list(cargar_algoritmos().keys()))
         duracion_es = st.number_input("Duración de cada E/S (ut)", min_value=10, step=10, value=20)
-        quantum = st.number_input("Quantum de Round Robin (ut)", min_value=10, step=10, value=30,
-                                  disabled=algoritmo != "Round Robin")
         tiempo_max = st.number_input("Tiempo máximo (ut)", min_value=50, step=10, value=380)
         st.caption("1 casilla = 10 ut. Los valores deben ser múltiplos de 10.")
+        st.subheader("Round Robin")
+        quantum_auto = st.checkbox("Quantum automático (regla del 80%)", value=True,
+                                   help="El quantum alcanza para que el 80% de las ráfagas de CPU "
+                                        "terminen sin ser desalojadas.")
+        quantum_manual = st.number_input("Quantum manual (ut)", min_value=10, step=10, value=30,
+                                         disabled=quantum_auto)
+        aviso_quantum = st.empty()
+
+    no_multiplos = [nombre for nombre, valor in [("Duración de E/S", duracion_es),
+                                                 ("Tiempo máximo", tiempo_max),
+                                                 ("Quantum manual", quantum_manual)]
+                    if valor % INTERVALO != 0]
+    if no_multiplos:
+        st.error(f"Deben ser múltiplos de {INTERVALO}: {', '.join(no_multiplos)}.")
+        st.stop()
 
     st.subheader("Procesos")
     st.caption("Ráfagas de CPU separadas por coma; entre ráfaga y ráfaga el proceso hace una E/S.")
@@ -188,6 +213,18 @@ def main():
         st.error(e)
     if errores or not filas:
         st.stop()
+
+    if quantum_auto:
+        quantum, cubiertas, total = quantum_regla_80(filas)
+        aviso_quantum.info(f"Quantum = {quantum} ut: {cubiertas} de {total} ráfagas "
+                           f"({cubiertas / total:.0%}) entran en un solo quantum.")
+    else:
+        quantum = quantum_manual
+        cubiertas = sum(1 for f in filas for r in f["rafagas"] if r <= quantum)
+        total = sum(len(f["rafagas"]) for f in filas)
+        if cubiertas / total < 0.8:
+            aviso_quantum.warning(f"Solo {cubiertas} de {total} ráfagas ({cubiertas / total:.0%}) "
+                                  f"entran en {quantum} ut; la regla pide al menos 80%.")
 
     tab_gantt, tab_resumen, tab_comparar = st.tabs(["Diagrama de Gantt", "Resumen final", "Comparar algoritmos"])
     sim = simular(algoritmo, filas, duracion_es, quantum, tiempo_max)
