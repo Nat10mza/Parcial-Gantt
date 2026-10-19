@@ -48,13 +48,5 @@ python3 simulador_sjf.py
 
 ## Problemas comunes
 
-- **`TimeoutError: [Errno 60] Operation timed out` en Mac:** la carpeta está en iCloud (Documentos/Escritorio) y iCloud bajó del disco los archivos de `.venv`. Creá el entorno fuera de iCloud:
-
-  ```
-  python3 -m venv ~/.venvs/parcial-grantt
-  ~/.venvs/parcial-grantt/bin/pip install -r requirements.txt
-  ~/.venvs/parcial-grantt/bin/streamlit run app.py
-  ```
-
 - **La primera vez Streamlit pide un email:** dejalo vacío y apretá Enter.
 - **`python3` / `py` no existe:** instalá Python desde https://www.python.org/downloads/ (en Windows, marcar "Add Python to PATH").
