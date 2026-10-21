@@ -72,13 +72,13 @@ class SimuladorOSFIFO:
             # Prioridad 3: Salida a Ejecución (rutina 2) - CPU libre y cola con listos
             if self.ejecutando is None and self.cola_listos:
                 p_e = self.cola_listos[0]
-                candidatos.append((3, f"2{p_e.id.upper()}", "ejecucion", p_e))
+                candidatos.append((4, f"2{p_e.id.upper()}", "ejecucion", p_e))
 
             # Prioridad 4: Regreso a Listo (rutina 4) - E/S terminada,
             # solo si la CPU no está en medio de una ráfaga
             if desbloqueados_ahora and not cpu_ocupada:
                 p_d = desbloqueados_ahora[0]
-                candidatos.append((4, f"4{p_d.id.upper()}", "desbloqueo", p_d))
+                candidatos.append((3, f"4{p_d.id.upper()}", "desbloqueo", p_d))
 
             tipo_ejecutado = None
             proc_afectado = None
